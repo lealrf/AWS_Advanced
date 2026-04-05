@@ -174,3 +174,64 @@ resource "aws_instance" "app_server" {
     Name = "FinGuard-App-Server"
   }
 }
+
+# ==========================================
+# 4. MONITORING & KPIs (CloudWatch)
+# ==========================================
+
+# KPI 1: CPU Utilization Alarm (Threshold for Auto Scaling)
+resource "aws_cloudwatch_metric_alarm" "cpu_kpi_alarm" {
+  alarm_name          = "finguard-cpu-scaling-kpi"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = "2"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/EC2"
+  period              = "120"
+  statistic           = "Average"
+  threshold           = "70" # KPI: Keep CPU under 70%
+  alarm_description   = "KPI: Triggers Auto Scaling if CPU exceeds 70% due to transaction spikes."
+
+  dimensions = {
+    InstanceId = aws_instance.app_server.id
+  }
+}
+
+# Performance Report: CloudWatch Dashboard
+resource "aws_cloudwatch_dashboard" "finguard_dashboard" {
+  dashboard_name = "FinGuard-Performance-KPIs"
+
+  dashboard_body = jsonencode({
+    widgets =[
+      {
+        type   = "metric"
+        x      = 0
+        y      = 0
+        width  = 12
+        height = 6
+        properties = {
+          metrics = [["AWS/EC2", "CPUUtilization", "InstanceId", aws_instance.app_server.id]
+          ]
+          period = 300
+          stat   = "Average"
+          region = "eu-central-1"
+          title  = "KPI: CPU Utilization (%)"
+        }
+      },
+      {
+        type   = "metric"
+        x      = 12
+        y      = 0
+        width  = 12
+        height = 6
+        properties = {
+          metrics = [["AWS/EC2", "NetworkIn", "InstanceId", aws_instance.app_server.id],["AWS/EC2", "NetworkOut", "InstanceId", aws_instance.app_server.id]
+          ]
+          period = 300
+          stat   = "Average"
+          region = "eu-central-1"
+          title  = "KPI: Transaction Traffic Volume (Bytes)"
+        }
+      }
+    ]
+  })
+}
