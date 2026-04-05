@@ -3,6 +3,7 @@
 ## C4 Container Architecture (Target Production State for PCI DSS)
 
 ```mermaid
+%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     %% External Entities
     User((Bank Client))
